@@ -39,11 +39,12 @@ if len(CONTEST_THEMES) < 2:
 
 # --- Optional -----------------------------------------------------------
 
-# "daily" or "monthly". Controls how long one contest round lasts. Use
-# "daily" for quick end-to-end testing; "monthly" is the real cadence.
+# "daily", "weekly", or "monthly". Controls how long one contest round
+# lasts. Use "daily" for quick end-to-end testing; "weekly" runs
+# Sunday-through-Saturday; "monthly" is the original cadence.
 CONTEST_PERIOD: str = _get_env("CONTEST_PERIOD", default="monthly").strip().lower()
-if CONTEST_PERIOD not in ("daily", "monthly"):
-    raise RuntimeError('CONTEST_PERIOD must be "daily" or "monthly"')
+if CONTEST_PERIOD not in ("daily", "weekly", "monthly"):
+    raise RuntimeError('CONTEST_PERIOD must be "daily", "weekly", or "monthly"')
 
 # How long, in minutes, the theme vote stays open at the start of each
 # round before the winning theme is locked in and photo submissions open.

@@ -10,8 +10,9 @@ A contest "round" now has three phases:
   3. completed - the round's entries have been tallied and a winner (or
                  co-winners, on a tie) declared.
 
-A "period" is either a calendar day or a calendar month (config.CONTEST_PERIOD)
-- daily is meant for quick end-to-end testing, monthly is the real cadence.
+A "period" is a calendar day, a Sunday-through-Saturday week, or a calendar
+month (config.CONTEST_PERIOD) - daily is meant for quick end-to-end testing,
+weekly and monthly are real cadences.
 """
 
 import calendar
@@ -20,11 +21,27 @@ from datetime import datetime, timedelta
 
 
 def period_key(now: datetime, period_type: str) -> str:
-    """Stable id for 'this round' - e.g. '2026-08-15' (daily) or '2026-08'
-    (monthly). Used to detect when a new round should start."""
+    """Stable id for 'this round' - e.g. '2026-08-15' (daily), '2026-W35'
+    (weekly, the Sunday the week starts on), or '2026-08' (monthly). Used
+    to detect when a new round should start."""
     if period_type == "daily":
         return now.strftime("%Y-%m-%d")
+    if period_type == "weekly":
+        week_start, _ = _weekly_bounds(now)
+        return week_start.strftime("%Y-%m-%d")
     return now.strftime("%Y-%m")
+
+
+def _weekly_bounds(now: datetime) -> tuple[datetime, datetime]:
+    """(start, end) of the Sunday-through-Saturday week containing `now`.
+    Python's weekday() is Mon=0..Sun=6, so Sunday is 6; days_since_sunday
+    turns that into Sun=0..Sat=6 so the week always starts on a Sunday."""
+    days_since_sunday = (now.weekday() + 1) % 7
+    start = (now - timedelta(days=days_since_sunday)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    end = (start + timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999999)
+    return start, end
 
 
 def period_bounds(now: datetime, period_type: str) -> tuple[datetime, datetime]:
@@ -32,6 +49,8 @@ def period_bounds(now: datetime, period_type: str) -> tuple[datetime, datetime]:
     if period_type == "daily":
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         end = start.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif period_type == "weekly":
+        start, end = _weekly_bounds(now)
     else:
         start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         last_day = calendar.monthrange(now.year, now.month)[1]
