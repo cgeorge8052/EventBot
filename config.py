@@ -66,6 +66,11 @@ CHECK_INTERVAL_SECONDS: int = int(_get_env("CHECK_INTERVAL_SECONDS", default="30
 _winner_role_raw = _get_env("WINNER_ROLE_ID")
 WINNER_ROLE_ID: int | None = int(_winner_role_raw) if _winner_role_raw else None
 
+# Optional role pinged alongside every contest announcement embed (new round,
+# theme locked in, round winner). Leave unset for no ping.
+_announce_role_raw = _get_env("ANNOUNCE_ROLE_ID")
+ANNOUNCE_ROLE_ID: int | None = int(_announce_role_raw) if _announce_role_raw else None
+
 # Free-form text describing the reward, shown in the winner announcement embed.
 REWARD_DESCRIPTION: str = _get_env(
     "REWARD_DESCRIPTION", default="Bragging rights and the Contest Champion role!"

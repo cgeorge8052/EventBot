@@ -63,6 +63,18 @@ def is_admin(interaction: discord.Interaction) -> bool:
     return bool(perms and (perms.administrator or perms.manage_guild))
 
 
+async def send_announcement(channel: discord.TextChannel, embed: discord.Embed) -> discord.Message:
+    """Send a contest embed to `channel`, pinging config.ANNOUNCE_ROLE_ID if
+    one's configured. Every embed the bot posts should go through this so
+    the ping applies everywhere with a single config change - no per-call
+    edits needed."""
+    content = f"<@&{config.ANNOUNCE_ROLE_ID}>" if config.ANNOUNCE_ROLE_ID else None
+    allowed_mentions = (
+        discord.AllowedMentions(roles=True) if config.ANNOUNCE_ROLE_ID else discord.AllowedMentions.none()
+    )
+    return await channel.send(content=content, embed=embed, allowed_mentions=allowed_mentions)
+
+
 async def get_contest_channel() -> discord.TextChannel | None:
     channel = bot.get_channel(config.CONTEST_CHANNEL_ID)
     if channel is None:
@@ -140,7 +152,7 @@ async def start_voting_phase(now: datetime) -> discord.Embed | str:
         text=f"Round #{contest.id} • entries open once voting closes, through "
         f"{end.strftime('%Y-%m-%d %H:%M %Z')}"
     )
-    message = await channel.send(embed=embed)
+    message = await send_announcement(channel, embed)
     for i in range(len(candidates)):
         await message.add_reaction(NUMBER_EMOJIS[i])
     db.set_poll_message(contest.id, str(message.id), str(channel.id))
@@ -200,7 +212,7 @@ async def finalize_theme_for_contest(contest: Contest) -> discord.Embed | str:
         ),
         color=discord.Color(0x1D003A),
     )
-    await channel.send(embed=embed)
+    await send_announcement(channel, embed)
     log.info("Round #%s theme finalized: %r (votes=%s)", contest.id, winning_theme, vote_counts)
     return embed
 
@@ -265,7 +277,7 @@ async def end_contest_and_tally(contest: Contest) -> discord.Embed | str:
                 value="\n".join(format_leaderboard_lines(top3)),
                 inline=False,
             )
-    await channel.send(embed=embed)
+    await send_announcement(channel, embed)
     log.info(
         "Ended round #%s (theme %r): winners=%s hearts=%s",
         contest.id, contest.theme, winner_ids, top_count,
